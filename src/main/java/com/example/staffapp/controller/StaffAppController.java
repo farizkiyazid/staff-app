@@ -28,19 +28,19 @@ public class StaffAppController {
     private ItemAPIMapper itemAPIMapper;
     private InventoryAllocMapper allocMapper;
 
-    public StaffAppController(StaffMapper staffMapper, ItemAPIMapper itemAPIMapper, InventoryAllocMapper allocMapper){
+    public StaffAppController(StaffMapper staffMapper, ItemAPIMapper itemAPIMapper, InventoryAllocMapper allocMapper) {
         this.staffMapper = staffMapper;
         this.itemAPIMapper = itemAPIMapper;
         this.allocMapper = allocMapper;
     }
 
     @GetMapping("/all")
-    public List<Staff> getAll(){
+    public List<Staff> getAll() {
         return staffMapper.getAll();
     }
 
     @GetMapping()
-    public Staff getOne(@RequestParam String idStaff){
+    public Staff getOne(@RequestParam String idStaff) {
         return staffMapper.getById(Integer.parseInt(idStaff));
     }
 
@@ -71,7 +71,7 @@ public class StaffAppController {
     public ResponseEntity<?> deleteStaff(@RequestBody Staff staff) {
         Staff selected = staffMapper.getById(staff.getIdStaff());
         if (selected == null) {
-            return new ResponseEntity<>("Staff with ID " + staff.getIdStaff()  + " not found", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("Staff with ID " + staff.getIdStaff() + " not found", HttpStatus.NOT_FOUND);
         }
         staffMapper.delete(staff.getIdStaff());
         JSONObject jsonObject = new JSONObject();
@@ -80,17 +80,16 @@ public class StaffAppController {
     }
 
 
-
     // ASSIGN/ALLOCATE INVENTORY TO STAFF
     @PostMapping("/assignItem")
     public ResponseEntity<?> assignItem(@RequestBody InventoryAlloc alloc) throws IOException, TimeoutException {
         // check Inventory and staff availability
-        if(itemAPIMapper.getById(alloc.getIdItem()) == null){
-            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem()  + " not found", HttpStatus.NOT_FOUND);
-        } else if (!itemAPIMapper.getById(alloc.getIdItem()).isAvailable()){
-            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem()  + " not available", HttpStatus.CONFLICT);
-        } else if (staffMapper.getById(alloc.getIdStaff()) == null){
-            return new ResponseEntity<>("Staff with ID " + alloc.getIdStaff()  + " not found", HttpStatus.NOT_FOUND);
+        if (itemAPIMapper.getById(alloc.getIdItem()) == null) {
+            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem() + " not found", HttpStatus.NOT_FOUND);
+        } else if (!itemAPIMapper.getById(alloc.getIdItem()).isAvailable()) {
+            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem() + " not available", HttpStatus.CONFLICT);
+        } else if (staffMapper.getById(alloc.getIdStaff()) == null) {
+            return new ResponseEntity<>("Staff with ID " + alloc.getIdStaff() + " not found", HttpStatus.NOT_FOUND);
         }
 
         // insert to invAlloc table
@@ -102,7 +101,8 @@ public class StaffAppController {
         mqPayload.put("action", "updateAvail");
         mqPayload.put("idItem", alloc.getIdItem());
         mqPayload.put("available", false);
-        // kirim ke MQ
+
+        // kirim MQ
         sendMQtoInventoryApp(mqPayload);
 
         JSONObject jsonObject = new JSONObject();
@@ -112,23 +112,27 @@ public class StaffAppController {
 
     // SHOW REPORT BY STAFF
     @GetMapping("invReport/staff")
-    public ResponseEntity<?> getInventoryReportByStaff(){
+    public ResponseEntity<?> getInventoryReportByStaff() {
         JSONObject jsonObject = new JSONObject();
         List<Staff> staffList = staffMapper.getAll();
         JSONArray arrReport = new JSONArray();
-        for (Staff s : staffList){
+
+        for (Staff staff : staffList) {
             JSONObject jsonReport = new JSONObject();
-            jsonReport.put("staff", s.toJsonObject());
+            jsonReport.put("staff", staff.toJsonObject());
             // get the items
             JSONArray arrItems = new JSONArray();
-            List<InventoryAlloc> allocs = allocMapper.getAllByStaff(s.getIdStaff());
-            for(InventoryAlloc alloc : allocs){
+            List<InventoryAlloc> allocs = allocMapper.getAllByStaff(staff.getIdStaff());
+
+            for (InventoryAlloc alloc : allocs) {
                 Item item = itemAPIMapper.getById(alloc.getIdItem());
                 arrItems.add(item.toJsonObject());
             }
-            jsonReport.put("items",arrItems);
+
+            jsonReport.put("items", arrItems);
             arrReport.add(jsonReport);
         }
+
         jsonObject.put("allInvReportByStaff", arrReport);
         jsonObject.put("status", "Retrieval success");
         return new ResponseEntity<>(jsonObject, HttpStatus.FOUND);
@@ -136,24 +140,27 @@ public class StaffAppController {
 
     // SHOW REPORT BY ITEM
     @GetMapping("invReport/item")
-    public ResponseEntity<?> getInventoryReportByItem(){
+    public ResponseEntity<?> getInventoryReportByItem() {
         JSONObject jsonObject = new JSONObject();
         List<Item> itemList = itemAPIMapper.getAll();
         JSONArray arrReport = new JSONArray();
-        for (Item it : itemList){
+
+        for (Item it : itemList) {
             JSONObject jsonReport = new JSONObject();
             jsonReport.put("item", it.toJsonObject());
             // get the staff.. Karena satu item cuman bisa di satu staff, disini tidak perlu array
             InventoryAlloc alloc = allocMapper.getByItem(it.getIdItem());
-            if (alloc != null){
+
+            if (alloc != null) {
                 Staff staff = staffMapper.getById(alloc.getIdStaff());
-                jsonReport.put("staff",staff.toJsonObject());
+                jsonReport.put("staff", staff.toJsonObject());
                 arrReport.add(jsonReport);
             } else {
                 jsonReport.put("staff", "not assigned yet");
                 arrReport.add(jsonReport);
             }
         }
+
         jsonObject.put("allInvReportByItem", arrReport);
         jsonObject.put("status", "Retrieval success");
         return new ResponseEntity<>(jsonObject, HttpStatus.FOUND);
