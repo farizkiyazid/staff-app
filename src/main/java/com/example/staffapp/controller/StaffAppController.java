@@ -63,7 +63,7 @@ public class StaffAppController {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("editedStaff", edited);
         jsonObject.put("status", "Edited staff saved successfully");
-        return new ResponseEntity<>(jsonObject, HttpStatus.CREATED);
+        return new ResponseEntity<>(jsonObject, HttpStatus.ACCEPTED);
     }
 
     // DELETE STAFF
@@ -76,7 +76,7 @@ public class StaffAppController {
         staffMapper.delete(staff.getIdStaff());
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("status", "Staff deleted successfully");
-        return new ResponseEntity<>(jsonObject, HttpStatus.CREATED);
+        return new ResponseEntity<>(jsonObject, HttpStatus.ACCEPTED);
     }
 
 
@@ -88,7 +88,7 @@ public class StaffAppController {
         if(itemAPIMapper.getById(alloc.getIdItem()) == null){
             return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem()  + " not found", HttpStatus.NOT_FOUND);
         } else if (!itemAPIMapper.getById(alloc.getIdItem()).isAvailable()){
-            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem()  + " not available", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("Inventory with ID " + alloc.getIdItem()  + " not available", HttpStatus.CONFLICT);
         } else if (staffMapper.getById(alloc.getIdStaff()) == null){
             return new ResponseEntity<>("Staff with ID " + alloc.getIdStaff()  + " not found", HttpStatus.NOT_FOUND);
         }
@@ -107,7 +107,7 @@ public class StaffAppController {
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("status", "Item allocated to user successfully");
-        return new ResponseEntity<>(jsonObject, HttpStatus.CREATED);
+        return new ResponseEntity<>(jsonObject, HttpStatus.OK);
     }
 
     // SHOW REPORT BY STAFF
@@ -131,7 +131,7 @@ public class StaffAppController {
         }
         jsonObject.put("allInvReportByStaff", arrReport);
         jsonObject.put("status", "Retrieval success");
-        return new ResponseEntity<>(jsonObject, HttpStatus.CREATED);
+        return new ResponseEntity<>(jsonObject, HttpStatus.FOUND);
     }
 
     // SHOW REPORT BY ITEM
@@ -156,7 +156,7 @@ public class StaffAppController {
         }
         jsonObject.put("allInvReportByItem", arrReport);
         jsonObject.put("status", "Retrieval success");
-        return new ResponseEntity<>(jsonObject, HttpStatus.CREATED);
+        return new ResponseEntity<>(jsonObject, HttpStatus.FOUND);
     }
 
 
